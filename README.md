@@ -1,5 +1,8 @@
 # Fog-Driven-EHS
 # Authentication Protocol Testbed for Fog-Driven e-Healthcare
+By: Dr. Naif Alzahrani
+Department of Cyber Security, College of Computer Science and Engineering, University of Jeddah, Jeddah, Saudi Arabia
+Correspondence: nsalzahrani@uj.edu.sa
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
