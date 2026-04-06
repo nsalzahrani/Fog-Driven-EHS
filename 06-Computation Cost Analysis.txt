@@ -1,0 +1,93 @@
+# Install required packages
+!pip install matplotlib numpy pandas
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+# Communication costs in bits for each scheme
+schemes = ['Scheme-01', 'Scheme-02', 'Scheme-03', 'Scheme-04', 'Scheme-05', 'Scheme-06', 'Scheme-Proposed']
+costs_bits = [10624, 16640, 1600, 2148, 5580, 2853, 2496]
+
+# Convert to kilobytes for better visualization (1 KB = 8192 bits)
+costs_kb = [cost / 8192 for cost in costs_bits]
+
+# Create DataFrame for better organization
+df = pd.DataFrame({
+    'Scheme': schemes,
+    'Cost (bits)': costs_bits,
+    'Cost (KB)': [f'{cost:.2f}' for cost in costs_kb]
+})
+
+print("Communication Costs Summary:")
+print(df.to_string(index=False))
+print("\n" + "="*60 + "\n")
+
+# Create figure with subplots
+fig = plt.figure(figsize=(16, 10))
+
+# Color scheme
+colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8']
+highlight_color = '#FFD700'  # Gold for the best schemes
+
+# 1. Bar chart - Bits
+ax1 = plt.subplot(2, 2, 1)
+bars1 = ax1.bar(schemes, costs_bits, color=colors, edgecolor='black', linewidth=1.5)
+ax1.set_ylabel('Communication Cost (bits)', fontsize=12, fontweight='bold')
+ax1.set_title('Communication Cost Comparison (in bits)', fontsize=14, fontweight='bold', pad=20)
+ax1.tick_params(axis='x', rotation=45, labelsize=10)
+ax1.grid(axis='y', alpha=0.3, linestyle='--')
+
+# Add value labels on bars
+for bar, cost in zip(bars1, costs_bits):
+    height = bar.get_height()
+    ax1.text(bar.get_x() + bar.get_width()/2., height + 200,
+             f'{cost:,}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+
+# 2. Bar chart - KB (log scale for better visualization)
+ax2 = plt.subplot(2, 2, 2)
+bars2 = ax2.bar(schemes, costs_kb, color=colors, edgecolor='black', linewidth=1.5)
+ax2.set_ylabel('Communication Cost (KB)', fontsize=12, fontweight='bold')
+ax2.set_title('Communication Cost Comparison (in KB)', fontsize=14, fontweight='bold', pad=20)
+ax2.tick_params(axis='x', rotation=45, labelsize=10)
+ax2.grid(axis='y', alpha=0.3, linestyle='--')
+ax2.set_yscale('log')  # Log scale to better show differences
+
+# Add value labels on bars
+for bar, cost in zip(bars2, costs_kb):
+    height = bar.get_height()
+    ax2.text(bar.get_x() + bar.get_width()/2., height * 1.1,
+             f'{cost:.2f} KB', ha='center', va='bottom', fontsize=9, fontweight='bold')
+
+# 3. Horizontal bar chart - better for comparison
+ax3 = plt.subplot(2, 2, 3)
+y_pos = np.arange(len(schemes))
+bars3 = ax3.barh(y_pos, costs_bits, color=colors, edgecolor='black', linewidth=1.5)
+ax3.set_xlabel('Communication Cost (bits)', fontsize=12, fontweight='bold')
+ax3.set_title('Horizontal Bar Chart - Communication Cost', fontsize=14, fontweight='bold', pad=20)
+ax3.set_yticks(y_pos)
+ax3.set_yticklabels(schemes, fontsize=10)
+ax3.grid(axis='x', alpha=0.3, linestyle='--')
+ax3.invert_yaxis()  # Display from highest to lowest
+
+# Add value labels
+for i, (bar, cost) in enumerate(zip(bars3, costs_bits)):
+    ax3.text(cost + 200, bar.get_y() + bar.get_height()/2,
+             f'{cost:,} bits', va='center', fontsize=9, fontweight='bold')
+
+# 4. Pie chart - showing proportion
+ax4 = plt.subplot(2, 2, 4)
+# Explode the smallest and largest
+explode = [0.1 if scheme in ['Scheme-03', 'Scheme-Proposed'] else 0.05 for scheme in schemes]
+patches, texts, autotexts = ax4.pie(costs_bits, labels=schemes, autopct='%1.1f%%',
+                                     colors=colors, explode=explode, startangle=90)
+ax4.set_title('Proportion of Total Communication Cost', fontsize=14, fontweight='bold', pad=20)
+
+# Make percentage text bold
+for autotext in autotexts:
+    autotext.set_fontweight('bold')
+    autotext.set_fontsize(9)
+
+plt.tight_layout(pad=3.0)
+plt.savefig('Fig-09.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+plt.show()

@@ -1,0 +1,229 @@
+(* ProVerif Implementation of Fog-Driven Authentication Scheme *)
+(* Enhanced version with proper authentication checks *)
+
+(* ==================== CHANNELS ==================== *)
+free c: channel.
+free sc: channel [private].
+
+(* ==================== TYPES ==================== *)
+type key.
+type nonce.
+type timestamp.
+type identity.
+type password.
+type biometric.
+
+(* ==================== CONSTANTS ==================== *)
+free Kf: key [private].
+free Ks: key [private].
+free IDf: identity.
+free IDs: identity.
+const DeltaT: timestamp.
+
+(* ==================== FUNCTIONS ==================== *)
+fun h(bitstring): bitstring.
+fun xor(bitstring, bitstring): bitstring.
+fun concat(bitstring, bitstring): bitstring.
+fun concat3(bitstring, bitstring, bitstring): bitstring.
+fun concat4(bitstring, bitstring, bitstring, bitstring): bitstring.
+fun concat5(bitstring, bitstring, bitstring, bitstring, bitstring): bitstring.
+fun hmac(bitstring, bitstring): bitstring.
+fun hmac_key(key, bitstring): bitstring.
+
+(* Conversion functions *)
+fun id2b(identity): bitstring.
+fun key2b(key): bitstring.
+fun nonce2b(nonce): bitstring.
+fun ts2b(timestamp): bitstring.
+fun pw2b(password): bitstring.
+fun bio2b(biometric): bitstring.
+
+(* ==================== EQUATIONS ==================== *)
+equation forall a: bitstring, b: bitstring; xor(xor(a, b), b) = a.
+
+(* ==================== EVENTS ==================== *)
+event ev_UserStarted(identity).
+event ev_UserRegistered(identity).
+event ev_UserAuthenticating(identity).
+event ev_UserAuthenticated(identity).
+event ev_FogStarted.
+event ev_FogReceivedAuth(identity).
+event ev_FogAuthenticated(identity).
+event ev_SensorStarted.
+event ev_SensorReceivedAuth(identity).
+event ev_SensorAuthenticated(identity).
+event ev_SessionKeyGenerated(bitstring).
+
+(* ==================== QUERIES ==================== *)
+query attacker(Kf).
+query attacker(Ks).
+
+query id: identity; event(ev_UserAuthenticated(id)) ==> event(ev_UserStarted(id)).
+query id: identity; event(ev_SensorAuthenticated(id)) ==> event(ev_FogAuthenticated(id)).
+query id: identity; event(ev_FogAuthenticated(id)) ==> event(ev_UserAuthenticated(id)).
+
+(* ==================== PROCESSES ==================== *)
+
+(* User Registration and Authentication Process *)
+let UserProcess =
+  (* Registration Phase *)
+  new IDu: identity;
+  new PWu: password;
+  new BIOu: biometric;
+  new nU1: nonce;
+  
+  event ev_UserStarted(IDu);
+  
+  let AuthU = h(concat3(id2b(IDu), pw2b(PWu), nonce2b(nU1))) in
+  let BioU = h(concat(bio2b(BIOu), nonce2b(nU1))) in
+  
+  out(sc, (IDu, AuthU, BioU));
+  
+  in(sc, (PIDu: identity, Reg1: bitstring, Reg2: bitstring, Reg3: bitstring));
+  
+  event ev_UserRegistered(IDu);
+  
+  (* Authentication Phase - Step 1 *)
+  new nU2: nonce;
+  new TS1: timestamp;
+  
+  let AuthU2 = h(concat3(id2b(IDu), pw2b(PWu), nonce2b(nU1))) in
+  let BioU2 = h(concat(bio2b(BIOu), nonce2b(nU1))) in
+  let hPIDuKf = xor(Reg1, AuthU2) in
+  let nF1_computed = xor(Reg2, hPIDuKf) in
+  let Reg3_computed = h(concat3(AuthU2, nF1_computed, BioU2)) in
+  
+  if Reg3_computed = Reg3 then
+    event ev_UserAuthenticating(IDu);
+    
+    let M1 = xor(nonce2b(nU2), h(concat(id2b(PIDu), key2b(Kf)))) in
+    let M2 = hmac(concat(AuthU2, BioU2), concat3(id2b(PIDu), id2b(IDs), ts2b(TS1))) in
+    
+    out(c, (PIDu, M1, M2, TS1));
+    
+    (* Receive final response *)
+    in(c, (Reg1new: bitstring, Reg2new: bitstring, PIDunew: identity, M8: bitstring, TS7: timestamp));
+    
+    (* Verify M8 with session key *)
+    let SK = h(concat5(nonce2b(nU2), nonce2b(nU2), nonce2b(nU2), AuthU2, BioU2)) in
+    let M8_computed = hmac(SK, concat4(Reg1new, Reg2new, id2b(PIDunew), ts2b(TS7))) in
+    
+    if M8_computed = M8 then
+      event ev_UserAuthenticated(IDu)
+  else
+    0.
+
+(* Fog Server Process *)
+let FogProcess =
+  event ev_FogStarted;
+  
+  (* Registration Phase - Server Side *)
+  in(sc, (IDu: identity, AuthU: bitstring, BioU: bitstring));
+  
+  new PIDu: identity;
+  new nF1: nonce;
+  
+  let Reg1 = xor(h(concat(id2b(PIDu), key2b(Kf))), AuthU) in
+  let Reg2 = xor(h(concat(id2b(PIDu), key2b(Kf))), nonce2b(nF1)) in
+  let Reg3 = h(concat3(AuthU, nonce2b(nF1), BioU)) in
+  
+  out(sc, (PIDu, Reg1, Reg2, Reg3));
+  
+  (* Authentication Phase - Step 2 *)
+  in(c, (authPIDu: identity, M1: bitstring, M2: bitstring, TS1: timestamp));
+  
+  new nF2: nonce;
+  new TS3: timestamp;
+  
+  let M1sensor = h(concat(id2b(IDs), key2b(Ks))) in
+  let hPIDuKf = h(concat(id2b(authPIDu), key2b(Kf))) in
+  let AuthUBioU = xor(xor(Reg1, AuthU), hPIDuKf) in
+  
+  (* Verify M2 *)
+  let M2_computed = hmac(concat(AuthU, BioU), concat3(id2b(authPIDu), id2b(IDs), ts2b(TS1))) in
+  
+  if M2_computed = M2 then
+    event ev_FogAuthenticated(IDu);
+    
+    let M3 = xor(nonce2b(nF2), h(AuthUBioU)) in
+    let M4 = hmac_key(Ks, concat4(id2b(IDf), id2b(IDu), M1, ts2b(TS3))) in
+    let M5 = xor(AuthUBioU, h(concat(nonce2b(nF2), M1sensor))) in
+    
+    out(c, (M3, M4, M5, TS3, nF2));
+    
+    event ev_FogReceivedAuth(IDu);
+    
+    (* Authentication Phase - Step 4 *)
+    in(c, (M6: bitstring, M7: bitstring, TS5: timestamp));
+    
+    new TS7: timestamp;
+    new PIDunew: identity;
+    
+    let SK = h(concat5(M1, nonce2b(nF2), nonce2b(nF2), AuthU, BioU)) in
+    
+    (* Verify M7 *)
+    let M7_computed = hmac(SK, concat3(id2b(IDs), id2b(IDf), ts2b(TS5))) in
+    
+    if M7_computed = M7 then
+      let Reg1new = xor(h(concat(id2b(PIDunew), key2b(Kf))), concat(AuthU, BioU)) in
+      let Reg2new = xor(h(concat(id2b(PIDunew), key2b(Kf))), nonce2b(nF1)) in
+      let M8 = hmac(SK, concat4(Reg1new, Reg2new, id2b(PIDunew), ts2b(TS7))) in
+      
+      out(c, (Reg1new, Reg2new, PIDunew, M8, TS7))
+  else
+    0.
+
+(* Sensor Device Process *)
+let SensorProcess =
+  event ev_SensorStarted;
+  
+  let M1sensor = h(concat(id2b(IDs), key2b(Ks))) in
+  
+  (* Authentication Phase - Step 3 *)
+  in(c, (M3: bitstring, M4: bitstring, M5: bitstring, TS3: timestamp, nF2: nonce));
+  in(c, (nU2: nonce));
+  in(c, (IDu: identity));
+  in(c, (AuthU: bitstring));
+  in(c, (BioU: bitstring));
+  
+  new nS1: nonce;
+  new TS5: timestamp;
+  
+  (* Verify M4 *)
+  let M4_computed = hmac_key(Ks, concat4(id2b(IDf), id2b(IDu), nonce2b(nU2), ts2b(TS3))) in
+  
+  if M4_computed = M4 then
+    event ev_SensorAuthenticated(IDu);
+    
+    let AuthUBioU = h(concat(AuthU, BioU)) in
+    let extracted_nF2 = xor(M3, h(AuthUBioU)) in
+    let computed_BioU = xor(M5, h(concat(extracted_nF2, M1sensor))) in
+    let SK = h(concat5(nonce2b(nU2), nonce2b(nF2), nonce2b(nS1), AuthU, computed_BioU)) in
+    let M6 = xor(nonce2b(nS1), h(concat(nonce2b(nU2), nonce2b(nF2)))) in
+    let M7 = hmac(SK, concat3(id2b(IDs), id2b(IDf), ts2b(TS5))) in
+    
+    out(c, (M6, M7, TS5));
+    
+    event ev_SensorReceivedAuth(IDu);
+    event ev_SessionKeyGenerated(SK)
+  else
+    0.
+
+(* Main Process *)
+process
+  new Kf: key;
+  new Ks: key;
+  new IDf: identity;
+  new IDs: identity;
+  
+  (
+    (!UserProcess)
+  )
+  |
+  (
+    (!FogProcess)
+  )
+  |
+  (
+    (!SensorProcess)
+  )

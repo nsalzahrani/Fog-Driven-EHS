@@ -1,0 +1,90 @@
+# Code for generating energy consumption graphs
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Data
+schemes = ['Sahu et al.\n[24]', 'Sun et al.\n[25]', 'Tanveer et al.\n[26]', 
+           'Chatterjee et al.\n[29]', 'Alzahrani et al.\n[32]', 'Huang et al.\n[37]', 'Proposed']
+user_energy = [19.40, 34.00, 16.88, 11.96, 13.72, 31.40, 4.52]
+fog_energy = [153.25, 347.50, 133.25, 81.25, 97.50, 172.25, 32.25]
+sensor_energy = [15.40, 21.81, 11.55, 7.70, 10.22, 13.72, 2.94]
+total_energy = [315.23, 679.48, 207.15, 98.51, 194.23, 394.94, 56.66]
+
+# Create figure
+fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+fig.patch.set_facecolor('white')
+
+# Plot 1: Total Energy Comparison
+ax1 = axes[0, 0]
+ax1.set_facecolor('white')
+x = np.arange(len(schemes))
+bars = ax1.bar(x, total_energy, color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2'], 
+               edgecolor='black', linewidth=1.5)
+for bar, val in zip(bars, total_energy):
+    ax1.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 5, f'{val:.1f}', 
+             ha='center', va='bottom', fontweight='bold', fontsize=9)
+ax1.set_xlabel('Authentication Schemes', fontsize=12, fontweight='bold')
+ax1.set_ylabel('Energy Consumption (mJ)', fontsize=12, fontweight='bold')
+ax1.set_title('(a) Total Energy Consumption per Authentication', fontsize=14, fontweight='bold')
+ax1.set_xticks(x)
+ax1.set_xticklabels(schemes, rotation=45, ha='right')
+ax1.grid(True, alpha=0.3, linestyle='--')
+ax1.set_ylim(0, 750)
+
+# Plot 2: Entity-wise Energy Distribution (Stacked)
+ax2 = axes[0, 1]
+ax2.set_facecolor('white')
+ax2.bar(x, user_energy, label='User Device (4W)', color='#2ecc71', edgecolor='black', linewidth=1.5)
+ax2.bar(x, fog_energy, bottom=user_energy, label='Fog Server (25W)', color='#3498db', edgecolor='black', linewidth=1.5)
+ax2.bar(x, sensor_energy, bottom=np.array(user_energy)+np.array(fog_energy), 
+        label='Sensor Node (3.5W)', color='#e74c3c', edgecolor='black', linewidth=1.5)
+for i, total in enumerate(total_energy):
+    ax2.text(i, total + 5, f'{total:.1f}', ha='center', va='bottom', fontweight='bold', fontsize=8)
+ax2.set_xlabel('Authentication Schemes', fontsize=12, fontweight='bold')
+ax2.set_ylabel('Energy Consumption (mJ)', fontsize=12, fontweight='bold')
+ax2.set_title('(b) Entity-wise Energy Distribution', fontsize=14, fontweight='bold')
+ax2.set_xticks(x)
+ax2.set_xticklabels(schemes, rotation=45, ha='right')
+ax2.legend(loc='upper right')
+ax2.grid(True, alpha=0.3, linestyle='--', axis='y')
+ax2.set_ylim(0, 750)
+
+# Plot 3: Energy Efficiency Ratio
+ax3 = axes[1, 0]
+ax3.set_facecolor('white')
+efficiency_ratio = [total_energy[i]/total_energy[-1] for i in range(6)] + [1]
+colors_eff = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
+bars = ax3.bar(x, efficiency_ratio, color=colors_eff, edgecolor='black', linewidth=1.5)
+for bar, val in zip(bars, efficiency_ratio):
+    ax3.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.2, f'{val:.1f}x', 
+             ha='center', va='bottom', fontweight='bold', fontsize=9)
+ax3.set_xlabel('Authentication Schemes', fontsize=12, fontweight='bold')
+ax3.set_ylabel('Energy Efficiency Ratio (× Proposed)', fontsize=12, fontweight='bold')
+ax3.set_title('(c) Energy Efficiency Ratio (Lower is Better)', fontsize=14, fontweight='bold')
+ax3.set_xticks(x)
+ax3.set_xticklabels(schemes, rotation=45, ha='right')
+ax3.grid(True, alpha=0.3, linestyle='--', axis='y')
+ax3.axhline(y=1, color='black', linestyle='-', linewidth=1)
+
+# Plot 4: Improvement Percentage
+ax4 = axes[1, 1]
+ax4.set_facecolor('white')
+improvements = [(1 - 1/(total_energy[i]/total_energy[-1])) * 100 for i in range(6)] + [0]
+bars = ax4.bar(x, improvements, color=colors_eff, edgecolor='black', linewidth=1.5)
+for bar, val in zip(bars, improvements):
+    if val > 0:
+        ax4.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1, f'{val:.1f}%', 
+                 ha='center', va='bottom', fontweight='bold', fontsize=9)
+ax4.set_xlabel('Authentication Schemes', fontsize=12, fontweight='bold')
+ax4.set_ylabel('Energy Saving (%)', fontsize=12, fontweight='bold')
+ax4.set_title('(d) Energy Saving Compared to Proposed', fontsize=14, fontweight='bold')
+ax4.set_xticks(x)
+ax4.set_xticklabels(schemes, rotation=45, ha='right')
+ax4.grid(True, alpha=0.3, linestyle='--', axis='y')
+ax4.axhline(y=np.mean(improvements[:-1]), color='red', linestyle='--', linewidth=2, 
+            label=f'Avg: {np.mean(improvements[:-1]):.1f}%')
+ax4.legend()
+
+plt.tight_layout()
+plt.savefig('Fig-10.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+plt.show()

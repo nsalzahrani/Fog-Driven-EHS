@@ -1,0 +1,310 @@
+# Import necessary libraries
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+# Set professional style with white background
+plt.rcParams['figure.facecolor'] = 'white'
+plt.rcParams['axes.facecolor'] = 'white'
+plt.rcParams['axes.edgecolor'] = 'black'
+plt.rcParams['axes.linewidth'] = 1.5
+plt.rcParams['axes.grid'] = True
+plt.rcParams['grid.alpha'] = 0.2
+plt.rcParams['grid.linestyle'] = '--'
+plt.rcParams['grid.color'] = '#cccccc'
+plt.rcParams['axes.labelcolor'] = 'black'
+plt.rcParams['xtick.color'] = 'black'
+plt.rcParams['ytick.color'] = 'black'
+plt.rcParams['xtick.major.size'] = 6
+plt.rcParams['ytick.major.size'] = 6
+plt.rcParams['xtick.major.width'] = 1.5
+plt.rcParams['ytick.major.width'] = 1.5
+plt.rcParams['legend.frameon'] = True
+plt.rcParams['legend.facecolor'] = 'white'
+plt.rcParams['legend.edgecolor'] = 'black'
+
+# ============================================
+# DATA FROM THE TABLE
+# ============================================
+
+# Scheme names
+schemes = ['Sahu et al. [24]', 'Sun et al. [25]', 'Tanveer et al. [26]', 
+           'Chatterjee et al. [29]', 'Alzahrani et al. [32]', 'Huang et al. [37]', 'Proposed']
+
+# Colors for schemes
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
+
+# Entity costs (User, Fog Server, Sensor)
+user_costs = [4.85, 8.5, 4.22, 2.99, 3.43, 7.85, 1.13]
+fog_costs = [6.13, 13.9, 5.33, 3.25, 3.9, 6.89, 1.29]
+sensor_costs = [4.4, 6.23, 3.3, 2.2, 2.92, 3.92, 0.84]
+total_costs = [15.33, 28.65, 12.85, 5.43, 10.33, 18.66, 3.33]
+
+# Cryptographic operation counts for each entity
+operations = ['Hash', 'HMAC', 'XOR', 'RNG', 'ECC', 'Pairing', 'Lattice']
+
+# Data for stacked bar chart (User + Fog + Sensor contributions)
+user_contribution = user_costs
+fog_contribution = fog_costs
+sensor_contribution = sensor_costs
+
+# ============================================
+# FIGURE 1: Total Computational Cost Comparison
+# ============================================
+fig1, axes = plt.subplots(1, 2, figsize=(16, 7))
+fig1.patch.set_facecolor('white')
+
+# Subplot 1: Bar chart of total costs
+ax1 = axes[0]
+ax1.set_facecolor('white')
+
+x_pos = np.arange(len(schemes))
+bars = ax1.bar(x_pos, total_costs, color=colors, edgecolor='black', linewidth=1.5, width=0.7)
+
+# Add value labels on top of bars
+for i, (bar, cost) in enumerate(zip(bars, total_costs)):
+    height = bar.get_height()
+    ax1.text(bar.get_x() + bar.get_width()/2., height + 0.3,
+             f'{cost:.2f} ms', ha='center', va='bottom', fontweight='bold', fontsize=10)
+
+ax1.set_xlabel('Authentication Schemes', fontsize=13, fontweight='bold', labelpad=10)
+ax1.set_ylabel('Total Computational Cost (ms)', fontsize=13, fontweight='bold', labelpad=10)
+ax1.set_title('(a) Total Computational Cost Comparison', fontsize=14, fontweight='bold', loc='left', pad=15)
+ax1.set_xticks(x_pos)
+ax1.set_xticklabels(schemes, rotation=45, ha='right', fontsize=10)
+ax1.grid(True, alpha=0.2, linestyle='--', color='#cccccc', axis='y')
+ax1.set_ylim(0, 32)
+
+# Add a horizontal line at proposed cost for reference
+ax1.axhline(y=3.33, color='#e377c2', linestyle='--', linewidth=2, alpha=0.7, label=f'Proposed: 3.33 ms')
+ax1.legend(loc='upper right', fontsize=10, frameon=True, fancybox=False, edgecolor='black')
+
+# Ensure spines are visible
+for spine in ax1.spines.values():
+    spine.set_visible(True)
+    spine.set_linewidth(1.5)
+    spine.set_color('black')
+
+# Subplot 2: Stacked bar chart showing entity contributions
+ax2 = axes[1]
+ax2.set_facecolor('white')
+
+# Create stacked bars
+bar_width = 0.6
+bars1 = ax2.bar(x_pos, user_contribution, bar_width, label='User Device', 
+                color='#2ecc71', edgecolor='black', linewidth=1.5)
+bars2 = ax2.bar(x_pos, fog_contribution, bar_width, bottom=user_contribution, 
+                label='Fog Server', color='#3498db', edgecolor='black', linewidth=1.5)
+bars3 = ax2.bar(x_pos, sensor_contribution, bar_width, 
+                bottom=np.array(user_contribution) + np.array(fog_contribution), 
+                label='Sensor Node', color='#e74c3c', edgecolor='black', linewidth=1.5)
+
+# Add total value labels on top
+for i in range(len(schemes)):
+    total_height = user_contribution[i] + fog_contribution[i] + sensor_contribution[i]
+    ax2.text(x_pos[i], total_height + 0.3, f'{total_height:.2f}', 
+             ha='center', va='bottom', fontweight='bold', fontsize=9)
+
+ax2.set_xlabel('Authentication Schemes', fontsize=13, fontweight='bold', labelpad=10)
+ax2.set_ylabel('Computational Cost (ms)', fontsize=13, fontweight='bold', labelpad=10)
+ax2.set_title('(b) Entity-wise Cost Distribution', fontsize=14, fontweight='bold', loc='left', pad=15)
+ax2.set_xticks(x_pos)
+ax2.set_xticklabels(schemes, rotation=45, ha='right', fontsize=10)
+ax2.legend(loc='upper right', fontsize=10, frameon=True, fancybox=False, edgecolor='black')
+ax2.grid(True, alpha=0.2, linestyle='--', color='#cccccc', axis='y')
+ax2.set_ylim(0, 32)
+
+# Ensure spines are visible
+for spine in ax2.spines.values():
+    spine.set_visible(True)
+    spine.set_linewidth(1.5)
+    spine.set_color('black')
+
+plt.tight_layout()
+plt.savefig('total_cost_comparison.png', dpi=300, bbox_inches='tight', facecolor='white')
+plt.show()
+
+# ============================================
+# FIGURE 2: Entity-wise Detailed Comparison
+# ============================================
+fig2, axes = plt.subplots(1, 3, figsize=(18, 6))
+fig2.patch.set_facecolor('white')
+
+# Subplot 1: User Device Costs
+ax1 = axes[0]
+ax1.set_facecolor('white')
+
+x_pos = np.arange(len(schemes))
+bars = ax1.bar(x_pos, user_costs, color=colors, edgecolor='black', linewidth=1.5, width=0.7)
+
+for i, (bar, cost) in enumerate(zip(bars, user_costs)):
+    height = bar.get_height()
+    ax1.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+             f'{cost:.2f} ms', ha='center', va='bottom', fontweight='bold', fontsize=9)
+
+ax1.set_xlabel('Authentication Schemes', fontsize=12, fontweight='bold', labelpad=10)
+ax1.set_ylabel('Computational Cost (ms)', fontsize=12, fontweight='bold', labelpad=10)
+ax1.set_title('(a) User Device Cost', fontsize=13, fontweight='bold', loc='left', pad=15)
+ax1.set_xticks(x_pos)
+ax1.set_xticklabels(schemes, rotation=45, ha='right', fontsize=9)
+ax1.grid(True, alpha=0.2, linestyle='--', color='#cccccc', axis='y')
+ax1.set_ylim(0, 10)
+
+for spine in ax1.spines.values():
+    spine.set_visible(True)
+    spine.set_linewidth(1.5)
+    spine.set_color('black')
+
+# Subplot 2: Fog Server Costs
+ax2 = axes[1]
+ax2.set_facecolor('white')
+
+bars = ax2.bar(x_pos, fog_costs, color=colors, edgecolor='black', linewidth=1.5, width=0.7)
+
+for i, (bar, cost) in enumerate(zip(bars, fog_costs)):
+    height = bar.get_height()
+    ax2.text(bar.get_x() + bar.get_width()/2., height + 0.2,
+             f'{cost:.2f} ms', ha='center', va='bottom', fontweight='bold', fontsize=9)
+
+ax2.set_xlabel('Authentication Schemes', fontsize=12, fontweight='bold', labelpad=10)
+ax2.set_ylabel('Computational Cost (ms)', fontsize=12, fontweight='bold', labelpad=10)
+ax2.set_title('(b) Fog Server Cost', fontsize=13, fontweight='bold', loc='left', pad=15)
+ax2.set_xticks(x_pos)
+ax2.set_xticklabels(schemes, rotation=45, ha='right', fontsize=9)
+ax2.grid(True, alpha=0.2, linestyle='--', color='#cccccc', axis='y')
+ax2.set_ylim(0, 16)
+
+for spine in ax2.spines.values():
+    spine.set_visible(True)
+    spine.set_linewidth(1.5)
+    spine.set_color('black')
+
+# Subplot 3: Sensor Node Costs
+ax3 = axes[2]
+ax3.set_facecolor('white')
+
+bars = ax3.bar(x_pos, sensor_costs, color=colors, edgecolor='black', linewidth=1.5, width=0.7)
+
+for i, (bar, cost) in enumerate(zip(bars, sensor_costs)):
+    height = bar.get_height()
+    ax3.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+             f'{cost:.2f} ms', ha='center', va='bottom', fontweight='bold', fontsize=9)
+
+ax3.set_xlabel('Authentication Schemes', fontsize=12, fontweight='bold', labelpad=10)
+ax3.set_ylabel('Computational Cost (ms)', fontsize=12, fontweight='bold', labelpad=10)
+ax3.set_title('(c) Sensor Node Cost', fontsize=13, fontweight='bold', loc='left', pad=15)
+ax3.set_xticks(x_pos)
+ax3.set_xticklabels(schemes, rotation=45, ha='right', fontsize=9)
+ax3.grid(True, alpha=0.2, linestyle='--', color='#cccccc', axis='y')
+ax3.set_ylim(0, 8)
+
+for spine in ax3.spines.values():
+    spine.set_visible(True)
+    spine.set_linewidth(1.5)
+    spine.set_color('black')
+
+plt.tight_layout()
+plt.savefig('Fig-06.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+plt.show()
+
+# ============================================
+# FIGURE 3: Grouped Bar Chart for All Entities
+# ============================================
+fig3, ax = plt.subplots(figsize=(14, 8))
+fig3.patch.set_facecolor('white')
+ax.set_facecolor('white')
+
+x = np.arange(len(schemes))
+width = 0.25
+
+# Create grouped bars
+bars1 = ax.bar(x - width, user_costs, width, label='User Device', 
+               color='#2ecc71', edgecolor='black', linewidth=1.5)
+bars2 = ax.bar(x, fog_costs, width, label='Fog Server', 
+               color='#3498db', edgecolor='black', linewidth=1.5)
+bars3 = ax.bar(x + width, sensor_costs, width, label='Sensor Node', 
+               color='#e74c3c', edgecolor='black', linewidth=1.5)
+
+# Add value labels
+for bars in [bars1, bars2, bars3]:
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                f'{height:.2f}', ha='center', va='bottom', fontsize=8, fontweight='bold')
+
+ax.set_xlabel('Authentication Schemes', fontsize=14, fontweight='bold', labelpad=10)
+ax.set_ylabel('Computational Cost (ms)', fontsize=14, fontweight='bold', labelpad=10)
+ax.set_title('Entity-wise Computational Cost Comparison of Authentication Schemes', 
+             fontsize=16, fontweight='bold', pad=20)
+ax.set_xticks(x)
+ax.set_xticklabels(schemes, rotation=45, ha='right', fontsize=11)
+ax.legend(loc='upper left', fontsize=12, frameon=True, fancybox=False, edgecolor='black')
+ax.grid(True, alpha=0.2, linestyle='--', color='#cccccc', axis='y')
+ax.set_ylim(0, 16)
+
+for spine in ax.spines.values():
+    spine.set_visible(True)
+    spine.set_linewidth(1.5)
+    spine.set_color('black')
+
+plt.tight_layout()
+plt.savefig('Fig-07.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+plt.show()
+
+# ============================================
+# FIGURE 4: Improvement Percentage Visualization
+# ============================================
+fig4, ax = plt.subplots(figsize=(12, 6))
+fig4.patch.set_facecolor('white')
+ax.set_facecolor('white')
+
+# Calculate improvement percentages
+improvements = []
+base_cost = total_costs[-1]  # Proposed scheme cost
+for cost in total_costs[:-1]:
+    improvement = ((cost - base_cost) / cost) * 100
+    improvements.append(improvement)
+
+# Add proposed scheme as 0% improvement (baseline)
+improvements.append(0)
+
+# Create horizontal bar chart
+y_pos = np.arange(len(schemes))
+colors_improvement = ['#3498db'] * 6 + ['#2ecc71']  # Blue for existing, green for proposed
+
+bars = ax.barh(y_pos, improvements, color=colors_improvement, edgecolor='black', linewidth=1.5)
+
+# Add value labels
+for i, (bar, imp) in enumerate(zip(bars, improvements)):
+    width = bar.get_width()
+    if imp > 0:
+        ax.text(width + 1, bar.get_y() + bar.get_height()/2., 
+                f'{imp:.1f}%', ha='left', va='center', fontweight='bold', fontsize=11)
+    else:
+        ax.text(width + 1, bar.get_y() + bar.get_height()/2., 
+                'Baseline', ha='left', va='center', fontweight='bold', fontsize=11)
+
+ax.set_xlabel('Improvement Percentage (%)', fontsize=14, fontweight='bold', labelpad=10)
+ax.set_ylabel('Authentication Schemes', fontsize=14, fontweight='bold', labelpad=10)
+ax.set_title('Performance Improvement of Proposed Scheme Compared to Existing Schemes', 
+             fontsize=16, fontweight='bold', pad=20)
+ax.set_yticks(y_pos)
+ax.set_yticklabels(schemes, fontsize=11)
+ax.grid(True, alpha=0.2, linestyle='--', color='#cccccc', axis='x')
+ax.set_xlim(0, 100)
+
+# Add vertical line at average improvement
+avg_improvement = np.mean(improvements[:-1])
+ax.axvline(x=avg_improvement, color='red', linestyle='--', linewidth=2, 
+           label=f'Average Improvement: {avg_improvement:.1f}%')
+ax.legend(loc='lower right', fontsize=11, frameon=True, fancybox=False, edgecolor='black')
+
+for spine in ax.spines.values():
+    spine.set_visible(True)
+    spine.set_linewidth(1.5)
+    spine.set_color('black')
+
+plt.tight_layout()
+plt.savefig('improvement_percentage.png', dpi=300, bbox_inches='tight', facecolor='white')
+plt.savefig('Fig-08.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+plt.show()

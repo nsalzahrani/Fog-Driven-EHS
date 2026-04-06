@@ -1,0 +1,229 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+plt.style.use('seaborn-v0_8-darkgrid')
+fig = plt.figure(figsize=(22, 16))
+tasks = np.array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+latency_lattice = np.array([6, 16, 40, 50, 60, 70, 75, 80, 85, 90])        
+latency_pairing = np.array([10, 20, 35, 40, 45, 50, 55, 60, 65, 70])       
+latency_identity = np.array([15, 30, 40, 50, 55, 65, 70, 75, 80, 85])      
+latency_ecc = np.array([20, 40, 45, 60, 70, 75, 80, 85, 90, 95])           
+latency_hash = np.array([6, 12, 18, 20, 22, 26, 30, 34, 38, 42])           
+response_lattice = np.array([0.25, 0.20, 0.30, 0.40, 0.50, 0.51, 0.50, 0.52, 0.60, 0.70])     
+response_pairing = np.array([0.10, 0.50, 0.10, 0.15, 0.20, 0.50, 0.20, 0.30, 0.40, 0.70])    
+response_identity = np.array([0.50, 0.70, 0.60, 0.70, 0.70, 0.80, 0.40, 0.38, 0.22, 0.20])   
+response_ecc = np.array([0.09, 0.10, 0.10, 0.20, 0.20, 0.61, 0.71, 0.40, 0.37, 0.71])        
+response_hash = np.array([0.06, 0.10, 0.10, 0.10, 0.10, 0.21, 0.21, 0.31, 0.26, 0.30])       
+energy_lattice = np.array([150, 210, 318, 431, 532, 638, 739, 834, 930, 1035])   
+energy_pairing = np.array([60, 100, 150, 150, 200, 220, 240, 260, 280, 330])     
+energy_identity = np.array([80, 110, 200, 200, 210, 230, 250, 270, 290, 340])     
+energy_ecc = np.array([75, 120, 160, 160, 190, 195, 225, 250, 280, 295])          
+energy_hash = np.array([30, 50, 90, 110, 150, 175, 200, 220, 250, 275])          
+throughput_lattice = (response_lattice / latency_lattice) * 1000
+throughput_pairing = (response_pairing / latency_pairing) * 1000
+throughput_identity = (response_identity / latency_identity) * 1000
+throughput_ecc = (response_ecc / latency_ecc) * 1000
+throughput_hash = (response_hash / latency_hash) * 1000
+schemes = {
+    'Lattice-Based [41]': {'color': '#1f77b4', 'marker': 'o', 'data': (latency_lattice, response_lattice, energy_lattice, throughput_lattice)},
+    'Pairing-Based [42]': {'color': '#ff7f0e', 'marker': 's', 'data': (latency_pairing, response_pairing, energy_pairing, throughput_pairing)},
+    'Identity-Based [43]': {'color': '#2ca02c', 'marker': '^', 'data': (latency_identity, response_identity, energy_identity, throughput_identity)},
+    'ECC-Based [44]': {'color': '#d62728', 'marker': 'd', 'data': (latency_ecc, response_ecc, energy_ecc, throughput_ecc)},
+    'Hash-Based (Proposed)': {'color': '#9467bd', 'marker': '*', 'data': (latency_hash, response_hash, energy_hash, throughput_hash)}
+}
+
+ax1 = plt.subplot(2, 3, 1)
+for name, props in schemes.items():
+    ax1.plot(tasks, props['data'][0], props['marker'] + '-', linewidth=2 if 'Proposed' not in name else 3, 
+             markersize=8 if 'Proposed' not in name else 10, label=name, color=props['color'])
+ax1.set_xlabel('Number of Tasks', fontsize=12, fontweight='bold')
+ax1.set_ylabel('Latency (ms)', fontsize=12, fontweight='bold')
+ax1.set_title('Latency vs No. of Tasks', fontsize=14, fontweight='bold')
+ax1.legend(loc='upper left', fontsize=9)
+ax1.grid(True, alpha=0.3)
+ax1.set_xticks(tasks[::2])
+ax2 = plt.subplot(2, 3, 2)
+for name, props in schemes.items():
+    ax2.plot(tasks, props['data'][1], props['marker'] + '-', linewidth=2 if 'Proposed' not in name else 3,
+             markersize=8 if 'Proposed' not in name else 10, label=name, color=props['color'])
+ax2.set_xlabel('Number of Tasks', fontsize=12, fontweight='bold')
+ax2.set_ylabel('Response Rate', fontsize=12, fontweight='bold')
+ax2.set_title('Response Rate vs No. of Tasks', fontsize=14, fontweight='bold')
+ax2.legend(loc='upper right', fontsize=9)
+ax2.grid(True, alpha=0.3)
+ax2.set_xticks(tasks[::2])
+
+ax3 = plt.subplot(2, 3, 3)
+for name, props in schemes.items():
+    ax3.plot(tasks, props['data'][2], props['marker'] + '-', linewidth=2 if 'Proposed' not in name else 3,
+             markersize=8 if 'Proposed' not in name else 10, label=name, color=props['color'])
+ax3.set_xlabel('Number of Tasks', fontsize=12, fontweight='bold')
+ax3.set_ylabel('Energy Consumption (mJ)', fontsize=12, fontweight='bold')
+ax3.set_title('Energy Consumption vs No. of Tasks', fontsize=14, fontweight='bold')
+ax3.legend(loc='upper left', fontsize=9)
+ax3.grid(True, alpha=0.3)
+ax3.set_xticks(tasks[::2])
+
+ax4 = plt.subplot(2, 3, 4)
+for name, props in schemes.items():
+    ax4.scatter(props['data'][0], props['data'][3], s=100 if 'Proposed' not in name else 150, 
+                label=name, color=props['color'], alpha=0.7, edgecolors='black', linewidth=1.5,
+                marker=props['marker'])
+ax4.set_xlabel('Latency (ms)', fontsize=12, fontweight='bold')
+ax4.set_ylabel('Throughput (requests/ms)', fontsize=12, fontweight='bold')
+ax4.set_title('Throughput vs Latency', fontsize=14, fontweight='bold')
+ax4.legend(loc='upper right', fontsize=9)
+ax4.grid(True, alpha=0.3)
+
+ax5 = plt.subplot(2, 3, 5)
+for name, props in schemes.items():
+    ax5.scatter(props['data'][1], props['data'][2], s=100 if 'Proposed' not in name else 150,
+                label=name, color=props['color'], alpha=0.7, edgecolors='black', linewidth=1.5,
+                marker=props['marker'])
+ax5.set_xlabel('Response Rate', fontsize=12, fontweight='bold')
+ax5.set_ylabel('Energy Consumption (mJ)', fontsize=12, fontweight='bold')
+ax5.set_title('Energy Consumption vs Response Rate', fontsize=14, fontweight='bold')
+ax5.legend(loc='upper left', fontsize=9)
+ax5.grid(True, alpha=0.3)
+
+ax6 = plt.subplot(2, 3, 6)
+
+avg_latency = [np.mean(latency_lattice), np.mean(latency_pairing), np.mean(latency_identity), 
+               np.mean(latency_ecc), np.mean(latency_hash)]
+avg_energy = [np.mean(energy_lattice), np.mean(energy_pairing), np.mean(energy_identity), 
+              np.mean(energy_ecc), np.mean(energy_hash)]
+avg_response = [np.mean(response_lattice), np.mean(response_pairing), np.mean(response_identity), 
+                np.mean(response_ecc), np.mean(response_hash)]
+
+
+scheme_names = ['Lattice\n[41]', 'Pairing\n[42]', 'Identity\n[43]', 'ECC\n[44]', 'Hash\n(Proposed)']
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+markers = ['o', 's', '^', 'd', '*']
+bubble_size = [r * 2000 for r in avg_response]  # Scale for better visibility
+
+for i in range(5):
+    ax6.scatter(avg_latency[i], avg_energy[i], s=bubble_size[i], c=colors[i], 
+                label=scheme_names[i], alpha=0.7, edgecolors='black', linewidth=2,
+                marker=markers[i])
+    ax6.annotate(scheme_names[i], (avg_latency[i], avg_energy[i]), 
+                xytext=(5, 5), textcoords='offset points', fontsize=10, fontweight='bold')
+
+ax6.set_xlabel('Average Latency (ms)', fontsize=12, fontweight='bold')
+ax6.set_ylabel('Average Energy (mJ)', fontsize=12, fontweight='bold')
+ax6.set_title('Performance Summary\n(Bubble size = Response Rate)', fontsize=14, fontweight='bold')
+ax6.legend(loc='upper right', fontsize=9)
+ax6.grid(True, alpha=0.3)
+
+# Add overall title
+plt.suptitle('Comprehensive Performance Analysis of Cryptographic Authentication Schemes\n(Lattice, Pairing, Identity, ECC, and Hash-Based)', 
+             fontsize=18, fontweight='bold', y=1.02)
+
+# Adjust layout
+plt.tight_layout()
+plt.savefig('Fig-01.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+plt.show()
+
+fig2, axes = plt.subplots(1, 3, figsize=(20, 7))
+fig2.suptitle('Performance Comparison at 50 Tasks', fontsize=18, fontweight='bold')
+
+# Latency comparison at 50 tasks
+latency_at_50 = [latency_lattice[4], latency_pairing[4], latency_identity[4], latency_ecc[4], latency_hash[4]]
+bars1 = axes[0].bar(scheme_names, latency_at_50, color=colors, edgecolor='black', linewidth=1.5)
+axes[0].set_ylabel('Latency (ms)', fontsize=14, fontweight='bold')
+axes[0].set_title('Latency Comparison', fontsize=16, fontweight='bold')
+axes[0].grid(True, alpha=0.3, axis='y')
+for i, (bar, v) in enumerate(zip(bars1, latency_at_50)):
+    height = bar.get_height()
+    axes[0].text(bar.get_x() + bar.get_width()/2., height + 1,
+                f'{v} ms', ha='center', va='bottom', fontweight='bold', fontsize=11)
+
+# Energy comparison at 50 tasks
+energy_at_50 = [energy_lattice[4], energy_pairing[4], energy_identity[4], energy_ecc[4], energy_hash[4]]
+bars2 = axes[1].bar(scheme_names, energy_at_50, color=colors, edgecolor='black', linewidth=1.5)
+axes[1].set_ylabel('Energy Consumption (mJ)', fontsize=14, fontweight='bold')
+axes[1].set_title('Energy Consumption Comparison', fontsize=16, fontweight='bold')
+axes[1].grid(True, alpha=0.3, axis='y')
+for i, (bar, v) in enumerate(zip(bars2, energy_at_50)):
+    height = bar.get_height()
+    axes[1].text(bar.get_x() + bar.get_width()/2., height + 5,
+                f'{v} mJ', ha='center', va='bottom', fontweight='bold', fontsize=11)
+
+# Response rate comparison at 50 tasks
+response_at_50 = [response_lattice[4], response_pairing[4], response_identity[4], response_ecc[4], response_hash[4]]
+bars3 = axes[2].bar(scheme_names, response_at_50, color=colors, edgecolor='black', linewidth=1.5)
+axes[2].set_ylabel('Response Rate', fontsize=14, fontweight='bold')
+axes[2].set_title('Response Rate Comparison', fontsize=16, fontweight='bold')
+axes[2].grid(True, alpha=0.3, axis='y')
+for i, (bar, v) in enumerate(zip(bars3, response_at_50)):
+    height = bar.get_height()
+    axes[2].text(bar.get_x() + bar.get_width()/2., height + 0.01,
+                f'{v:.2f}', ha='center', va='bottom', fontweight='bold', fontsize=11)
+
+plt.tight_layout()
+plt.savefig('Fig-02.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+plt.show()
+
+
+fig3 = plt.figure(figsize=(12, 10))
+ax = fig3.add_subplot(111, projection='polar')
+
+# Categories for radar chart
+categories = ['Low Latency', 'High Response Rate', 'Low Energy', 'High Throughput', 'Scalability', 'Lightweight']
+num_vars = len(categories)
+
+# Compute values for each scheme (normalized 0-1, where 1 is best)
+def normalize_min_max(data, maximize=True):
+    data = np.array(data)
+    if maximize:
+        return (data - data.min()) / (data.max() - data.min())
+    else:
+        return (data.max() - data) / (data.max() - data.min())
+
+# Calculate metrics (all normalized to 0-1 scale, 1 is best)
+latency_values = normalize_min_max([np.mean(latency_lattice), np.mean(latency_pairing), 
+                                   np.mean(latency_identity), np.mean(latency_ecc), 
+                                   np.mean(latency_hash)], maximize=False)
+response_values = normalize_min_max([np.mean(response_lattice), np.mean(response_pairing), 
+                                    np.mean(response_identity), np.mean(response_ecc), 
+                                    np.mean(response_hash)], maximize=True)
+energy_values = normalize_min_max([np.mean(energy_lattice), np.mean(energy_pairing), 
+                                  np.mean(energy_identity), np.mean(energy_ecc), 
+                                  np.mean(energy_hash)], maximize=False)
+throughput_values = normalize_min_max([np.mean(throughput_lattice), np.mean(throughput_pairing), 
+                                     np.mean(throughput_identity), np.mean(throughput_ecc), 
+                                     np.mean(throughput_hash)], maximize=True)
+scalability_values = [0.5, 0.6, 0.7, 0.8, 0.95]  # Estimated based on scheme characteristics
+lightweight_values = [0.3, 0.5, 0.6, 0.7, 0.98]  # Estimated based on scheme complexity
+
+# Combine values
+scheme_values = [
+    [latency_values[0], response_values[0], energy_values[0], throughput_values[0], scalability_values[0], lightweight_values[0]],
+    [latency_values[1], response_values[1], energy_values[1], throughput_values[1], scalability_values[1], lightweight_values[1]],
+    [latency_values[2], response_values[2], energy_values[2], throughput_values[2], scalability_values[2], lightweight_values[2]],
+    [latency_values[3], response_values[3], energy_values[3], throughput_values[3], scalability_values[3], lightweight_values[3]],
+    [latency_values[4], response_values[4], energy_values[4], throughput_values[4], scalability_values[4], lightweight_values[4]]
+]
+
+# Compute angles for each axis
+angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+angles += angles[:1]  # Close the loop
+
+# Plot each scheme
+for i, (name, values) in enumerate(zip(['Lattice-Based', 'Pairing-Based', 'Identity-Based', 'ECC-Based', 'Hash-Based (Proposed)'], scheme_values)):
+    values += values[:1]  # Close the loop
+    ax.plot(angles, values, 'o-', linewidth=2.5, label=name, color=colors[i], markersize=8, marker=markers[i])
+    ax.fill(angles, values, alpha=0.1, color=colors[i])
+
+# Set category labels
+ax.set_xticks(angles[:-1])
+ax.set_xticklabels(categories, fontsize=12, fontweight='bold')
+ax.set_ylim(0, 1)
+ax.set_yticks([0.25, 0.5, 0.75])
+ax.set_yticklabels(['0.25', '0.5', '0.75'], fontsize=10)
+ax.set_title('Performance Radar Chart\n(Closer to outer edge = Better)', fontsize=16, fontweight='bold', pad=20)
+ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0), fontsize=11)
+ax.grid(True)
+
+plt.tight_layout()
+plt.savefig('Fig-03.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+plt.show()
